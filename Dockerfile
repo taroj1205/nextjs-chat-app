@@ -35,5 +35,5 @@ CMD pnpm start
 FROM base as dev
 ENV NODE_ENV=development
 COPY . .
-CMD pnpm run devs
+CMD pnpm run dev
 

@@ -41,8 +41,11 @@ export function useMessaging(url: () => string) {
 
     socket.addEventListener(
       "error",
-      () => {
-        console.error("An error occurred while connecting to the server");
+      (error) => {
+        console.error(
+          "An error occurred while connecting to the server",
+          error
+        );
       },
       controller
     );

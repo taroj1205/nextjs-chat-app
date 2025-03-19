@@ -7,11 +7,9 @@ import { MessageCard } from "./message-card";
 
 export const ChatMessages = memo(() => {
   const isProd = process.env.NODE_ENV === "production";
-  const protocol = isProd ? "wss:" : "ws:";
   const host = isProd ? "chat.poyo.jp" : "localhost:3000";
 
-  const wsUrl = `${protocol}//${host}/ws`;
-  console.log(wsUrl);
+  const wsUrl = `http${isProd ? "s" : ""}://${host}/api/ws`;
   const [messages, sendMessage] = useMessaging(() => wsUrl);
 
   return (

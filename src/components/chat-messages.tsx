@@ -9,7 +9,7 @@ export const ChatMessages = memo(() => {
   const isProd = process.env.NODE_ENV === "production";
   const host = isProd ? "chat.poyo.jp" : "localhost:3000";
 
-  const wsUrl = `http${isProd ? "s" : ""}://${host}/api/ws`;
+  const wsUrl = `http${isProd ? "s" : ""}://${host}/ws`;
   const [messages, sendMessage] = useMessaging(() => wsUrl);
 
   return (

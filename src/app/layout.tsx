@@ -16,7 +16,9 @@ export default function RootLayout({
       <body suppressHydrationWarning>
         <ColorModeScript initialColorMode="dark" />
         <UIProvider>
-          <Container centerContent>{children}</Container>
+          <Container centerContent minH="100svh" p="0">
+            {children}
+          </Container>
         </UIProvider>
       </body>
     </html>

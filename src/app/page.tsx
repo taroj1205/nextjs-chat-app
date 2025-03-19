@@ -1,7 +1,11 @@
-export default function Home() {
+import { ChatMessages } from "@/components/chat-messages";
+import { UILink } from "@/components/ui/link";
+import Link from "next/link";
+
+export default function Chat() {
   return (
-    <main>
-      <div>Hello world!</div>
-    </main>
+    <>
+      <ChatMessages />
+    </>
   );
 }

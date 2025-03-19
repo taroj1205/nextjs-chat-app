@@ -1,7 +1,6 @@
 import Link, { type LinkProps } from "next/link";
 import { FC, memo } from "react";
 import {
-  Component,
   type LinkProps as YamadaLinkProps,
   Link as YamadaLink,
 } from "@yamada-ui/react";

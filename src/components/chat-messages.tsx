@@ -1,17 +1,9 @@
 "use client";
 import { useMessaging } from "@/utils/websocket";
-import {
-  For,
-  Grid,
-  GridItem,
-  ScrollArea,
-  Text,
-  VStack,
-} from "@yamada-ui/react";
+import { For, Grid, GridItem, ScrollArea, VStack } from "@yamada-ui/react";
 import { memo } from "react";
 import { MessageInput } from "./message-input";
 import { MessageCard } from "./message-card";
-import { usePathname } from "next/navigation";
 
 export const ChatMessages = memo(() => {
   const isProd = process.env.NODE_ENV === "production";

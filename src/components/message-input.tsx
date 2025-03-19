@@ -1,6 +1,6 @@
 import { Message } from "@/types";
 import { SendIcon } from "@yamada-ui/lucide";
-import { Button, HStack, IconButton, Input } from "@yamada-ui/react";
+import { HStack, IconButton, Input } from "@yamada-ui/react";
 import { FC, memo, useCallback, useRef } from "react";
 
 interface MessageInputProps {

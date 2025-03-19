@@ -7,6 +7,7 @@ EXPOSE 3000
 
 RUN npm install -g pnpm
 
+RUN pnpm install --frozen-lockfile
 
 FROM base as builder
 WORKDIR /app
@@ -33,7 +34,6 @@ CMD pnpm start
 
 FROM base as dev
 ENV NODE_ENV=development
-RUN pnpm install --frozen-lockfile
 COPY . .
 CMD pnpm run devs
 

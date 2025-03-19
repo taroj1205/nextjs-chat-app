@@ -14,3 +14,5 @@ interface UILinkProps
 export const UILink: FC<UILinkProps> = memo((props) => {
   return <YamadaLink as={Link} {...props} />;
 });
+
+UILink.displayName = "UILink";

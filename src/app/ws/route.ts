@@ -1,15 +1,13 @@
+import { SYSTEM_INFO } from "@/constants";
 import { Message } from "@/types";
-
-const SYSTEM_INFO = {
-  senderId: crypto.randomUUID(),
-  channelId: crypto.randomUUID(),
-  timestamp: new Date().toISOString(),
-};
+import { nanoid } from "nanoid";
 
 export function GET() {
+  console.log("GET request");
   const headers = new Headers();
   headers.set("Connection", "Upgrade");
   headers.set("Upgrade", "websocket");
+  console.log("Upgrade Required");
   return new Response("Upgrade Required", { status: 426, headers });
 }
 
@@ -23,7 +21,7 @@ export function SOCKET(
     if (client === other || other.readyState !== other.OPEN) continue;
     other.send(
       JSON.stringify({
-        id: crypto.randomUUID(),
+        id: nanoid(),
         senderId: SYSTEM_INFO.senderId,
         channelId: SYSTEM_INFO.channelId,
         timestamp: SYSTEM_INFO.timestamp,
@@ -41,7 +39,7 @@ export function SOCKET(
 
   client.send(
     JSON.stringify({
-      id: crypto.randomUUID(),
+      id: nanoid(),
       senderId: SYSTEM_INFO.senderId,
       channelId: SYSTEM_INFO.channelId,
       timestamp: SYSTEM_INFO.timestamp,
@@ -54,7 +52,7 @@ export function SOCKET(
       if (client === other || other.readyState !== other.OPEN) continue;
       other.send(
         JSON.stringify({
-          id: crypto.randomUUID(),
+          id: nanoid(),
           senderId: SYSTEM_INFO.senderId,
           channelId: SYSTEM_INFO.channelId,
           timestamp: SYSTEM_INFO.timestamp,

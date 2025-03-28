@@ -2,9 +2,10 @@ import { Message } from "@/types";
 import { SendIcon } from "@yamada-ui/lucide";
 import { HStack, IconButton, Input } from "@yamada-ui/react";
 import { FC, memo, useCallback, useRef } from "react";
+import { nanoid } from "nanoid";
 
 interface MessageInputProps {
-  sendMessage: (message: Message) => void;
+  sendMessage: (message: Omit<Message, "id">) => void;
 }
 
 export const MessageInput: FC<MessageInputProps> = memo(({ sendMessage }) => {
@@ -18,11 +19,10 @@ export const MessageInput: FC<MessageInputProps> = memo(({ sendMessage }) => {
       console.log("Sending message:", message);
 
       sendMessage({
-        id: crypto.randomUUID(),
         text: message.slice(0, 1000),
-        senderId: crypto.randomUUID(),
+        senderId: nanoid(),
         senderName: "User 1",
-        channelId: crypto.randomUUID(),
+        channelId: nanoid(),
         timestamp: new Date().toISOString(),
       });
       if (inputRef.current) inputRef.current.value = "";

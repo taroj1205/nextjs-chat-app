@@ -1,32 +1,29 @@
 "use client";
 import { useMessaging } from "@/utils/websocket";
 import { For, Grid, GridItem, ScrollArea, VStack } from "@yamada-ui/react";
-import { memo } from "react";
+import { FC, memo } from "react";
 import { MessageInput } from "./message-input";
 import { MessageCard } from "./message-card";
 
-export const ChatMessages = memo(() => {
-  const isProd = process.env.NODE_ENV === "production";
-  const host = isProd ? "chat.poyo.jp" : "localhost:3000";
+interface ChatMessagesProps {
+  hostname: string;
+}
 
-  const wsUrl = `http${isProd ? "s" : ""}://${host}/ws`;
+export const ChatMessages: FC<ChatMessagesProps> = memo(({ hostname }) => {
+  const isProd = process.env.NODE_ENV === "production";
+
+  const wsUrl = `http${isProd ? "s" : ""}://${hostname}/ws`;
   const [messages, sendMessage] = useMessaging(() => wsUrl);
 
   return (
-    <Grid h="100svh" gridTemplateRows="1fr auto" w="full" p="md">
-      <GridItem>
-        <ScrollArea>
-          <VStack>
-            <For each={messages}>
-              {(message) => <MessageCard key={message.id} message={message} />}
-            </For>
-          </VStack>
-        </ScrollArea>
-      </GridItem>
-      <GridItem>
-        <MessageInput sendMessage={sendMessage} />
-      </GridItem>
-    </Grid>
+    <VStack maxH="100svh" h="100svh" w="full" p="md">
+      <ScrollArea h="full" as={VStack}>
+        <For each={messages}>
+          {(message) => <MessageCard key={message.id} message={message} />}
+        </For>
+      </ScrollArea>
+      <MessageInput sendMessage={sendMessage} />
+    </VStack>
   );
 });
 

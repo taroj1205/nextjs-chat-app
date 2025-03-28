@@ -1,6 +1,6 @@
 "use client";
 import { useMessaging } from "@/utils/websocket";
-import { For, Grid, GridItem, ScrollArea, VStack } from "@yamada-ui/react";
+import { For, ScrollArea, VStack } from "@yamada-ui/react";
 import { FC, memo } from "react";
 import { MessageInput } from "./message-input";
 import { MessageCard } from "./message-card";

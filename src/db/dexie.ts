@@ -8,7 +8,7 @@ export const db = new Dexie("chat-app-db") as Dexie & {
   users: EntityTable<User & { createdAt: string; updatedAt: string }, "id">;
 };
 
-db.version(1).stores({
+db.version(2).stores({
   messages:
     "++id, text, senderId, channelId, timestamp, status, isLocal, attachments",
   users: "id, username, status, lastSeen, createdAt, updatedAt",

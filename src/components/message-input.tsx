@@ -1,5 +1,5 @@
 import { Message } from "@/types";
-import { SendIcon } from "@yamada-ui/lucide";
+import { RefreshCwIcon, SendIcon } from "@yamada-ui/lucide";
 import {
   Center,
   HStack,
@@ -10,17 +10,20 @@ import {
 } from "@yamada-ui/react";
 import { FC, memo, useCallback, useRef } from "react";
 import { nanoid } from "nanoid";
+import { db } from "@/db";
 
 interface MessageInputProps {
   sendMessage: (message: Omit<Message, "id">) => void;
   onlineCount: number;
+  isConnected: boolean;
+  onReconnect: () => void;
 }
 
 export const MessageInput: FC<MessageInputProps> = memo(
-  ({ sendMessage, onlineCount }) => {
+  ({ sendMessage, onlineCount, isConnected, onReconnect }) => {
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-    const handleSubmit = useCallback(() => {
+    const handleSubmit = useCallback(async () => {
       event.preventDefault();
       const message = textareaRef.current?.value;
 
@@ -36,10 +39,13 @@ export const MessageInput: FC<MessageInputProps> = memo(
         senderId = newId;
       }
 
+      const user = await db.users.get(senderId);
+      const senderName = user?.username || "User";
+
       sendMessage({
         text: message.slice(0, 1000),
         senderId: senderId,
-        senderName: "User",
+        senderName,
         channelId: nanoid(),
         timestamp: new Date().toISOString(),
       });
@@ -67,10 +73,26 @@ export const MessageInput: FC<MessageInputProps> = memo(
         w="full"
         backdropFilter="blur(10px)"
       >
-        {onlineCount > 0 && (
-          <Center as={Tag} colorScheme="primary" w="fit-content">
-            {onlineCount} Online
-          </Center>
+        {isConnected ? (
+          onlineCount > 0 && (
+            <Center as={Tag} colorScheme="primary" w="fit-content">
+              {onlineCount} Online
+            </Center>
+          )
+        ) : (
+          <HStack gap="xs">
+            <Center as={Tag} colorScheme="danger" w="fit-content">
+              Connection Disconnected
+            </Center>
+            <IconButton
+              onClick={onReconnect}
+              variant="subtle"
+              colorScheme="primary"
+              size="xs"
+            >
+              <RefreshCwIcon />
+            </IconButton>
+          </HStack>
         )}
         <HStack as="form" onSubmit={handleSubmit} w="full" position="relative">
           <Textarea

@@ -11,7 +11,8 @@ import {
 import { FC, memo, useCallback, useEffect, useRef } from "react";
 import { MessageInput } from "./message-input";
 import { MessageCard } from "./message-card";
-import { ArrowDownIcon } from "@yamada-ui/lucide";
+import { ArrowDownIcon, CogIcon } from "@yamada-ui/lucide";
+import Link from "next/link";
 
 interface ChatMessagesProps {
   hostname: string;
@@ -23,9 +24,8 @@ export const ChatMessages: FC<ChatMessagesProps> = memo(({ hostname }) => {
   const shouldScrollRef = useRef(true);
 
   const wsUrl = `http${isProd ? "s" : ""}://${hostname}/ws`;
-  const [messages, sendMessage, onlineCount, userId] = useMessaging(
-    () => wsUrl
-  );
+  const [messages, sendMessage, onlineCount, userId, isConnected, connect] =
+    useMessaging(() => wsUrl);
 
   useEffect(() => {
     const scrollArea = scrollAreaRef.current;
@@ -67,19 +67,31 @@ export const ChatMessages: FC<ChatMessagesProps> = memo(({ hostname }) => {
           <Box minH="20" w="full" px="1rem" />
         </VStack>
       </Bleed>
-      <IconButton
-        onClick={handleScrollToBottom}
-        position="fixed"
-        bottom="2xl"
-        right="md"
-        z={10}
-        colorScheme="secondary"
-        variant="subtle"
-        rounded="full"
-      >
-        <ArrowDownIcon />
-      </IconButton>
-      <MessageInput sendMessage={sendMessage} onlineCount={onlineCount} />
+      <VStack position="fixed" bottom="2xl" right="md" z={10} w="fit-content">
+        <IconButton
+          as={Link}
+          href="/settings"
+          colorScheme="secondary"
+          variant="subtle"
+          rounded="full"
+        >
+          <CogIcon />
+        </IconButton>
+        <IconButton
+          onClick={handleScrollToBottom}
+          colorScheme="secondary"
+          variant="subtle"
+          rounded="full"
+        >
+          <ArrowDownIcon />
+        </IconButton>
+      </VStack>
+      <MessageInput
+        sendMessage={sendMessage}
+        onlineCount={onlineCount}
+        isConnected={isConnected}
+        onReconnect={connect}
+      />
     </VStack>
   );
 });

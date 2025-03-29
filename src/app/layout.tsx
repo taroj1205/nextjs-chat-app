@@ -16,12 +16,12 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      style={{ height: "100svh", overflowY: "clip" }}
+      style={{ height: "100dvh", overflowY: "clip" }}
     >
       <body suppressHydrationWarning>
         <ColorModeScript initialColorMode="dark" />
         <Providers>
-          <Container centerContent h="100svh" maxH="100svh" p="0">
+          <Container centerContent h="100dvh" maxH="100dvh" p="0">
             {children}
           </Container>
         </Providers>

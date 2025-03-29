@@ -1,19 +1,15 @@
 import { Message } from "@/types";
 import { SendIcon } from "@yamada-ui/lucide";
 import {
-  Box,
   Center,
-  Float,
   HStack,
   IconButton,
-  Input,
   Tag,
   Textarea,
   VStack,
 } from "@yamada-ui/react";
 import { FC, memo, useCallback, useRef } from "react";
 import { nanoid } from "nanoid";
-import { useRouter } from "next/navigation";
 
 interface MessageInputProps {
   sendMessage: (message: Omit<Message, "id">) => void;

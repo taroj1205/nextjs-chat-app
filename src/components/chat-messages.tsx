@@ -53,7 +53,7 @@ export const ChatMessages: FC<ChatMessagesProps> = memo(({ hostname }) => {
     if (shouldScrollRef.current && scrollAreaRef.current) {
       handleScrollToBottom();
     }
-  }, [messages]);
+  }, [messages, handleScrollToBottom]);
 
   return (
     <VStack maxH="100dvh" h="100dvh" w="full" px="md">

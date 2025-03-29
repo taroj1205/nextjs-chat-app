@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { db } from "@/db";
 import {
   VStack,
@@ -15,12 +15,15 @@ import { nanoid } from "nanoid";
 import { useRouter } from "next/navigation";
 
 export function Settings() {
+  const [userId, setUserId] = useState<string | null>(null);
   const [username, setUsername] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
   const createNewUser = useCallback(async () => {
     const newId = nanoid();
+    console.log("Creating new user with id:", newId);
+    console.log("Current users:", await db.users.toArray());
     await db.users.add({
       id: newId,
       username: "User",
@@ -29,38 +32,42 @@ export function Settings() {
       updatedAt: new Date().toISOString(),
       status: "online",
     });
+    setUserId(newId);
     return newId;
   }, []);
 
-  const { data: userId } = useQuery({
-    queryKey: ["userId"],
-    queryFn: async () => {
-      const userId = localStorage.getItem("userId");
-      console.log("userId", userId);
-      if (!userId) {
-        const newId = await createNewUser();
-        localStorage.setItem("userId", newId);
+  const checkUserId = useCallback(async () => {
+    const userId = localStorage.getItem("userId");
+    console.log("userId", userId);
+    if (!userId) {
+      const newId = await createNewUser();
+      localStorage.setItem("userId", newId);
+      return newId;
+    }
+    const user = await db.users.where("id").equals(userId).first();
+    if (!user) {
+      const newId = await createNewUser();
+      localStorage.setItem("userId", newId);
+      return newId;
+    }
+    setUserId(userId);
+    return userId;
+  }, [createNewUser]);
 
-        return newId;
-      }
-      return userId;
-    },
-  });
+  useEffect(() => {
+    checkUserId();
+  }, [userId, checkUserId]);
 
   const { data: currentUsername } = useQuery({
     queryKey: ["currentUsername", userId],
     queryFn: async () => {
-      let id = localStorage.getItem("userId");
-      if (!id) {
-        const userId = await createNewUser();
-        localStorage.setItem("userId", userId);
-        id = userId;
-      }
-      const user = await db.users.where("id").equals(id).first();
+      const user = await db.users.where("id").equals(userId).first();
       if (!user) {
-        const user = await db.users.where("id").equals(id).first();
+        const user = await db.users.where("id").equals(userId).first();
+        console.log(user);
         return user.username;
       }
+      console.log(user);
       return user.username;
     },
     enabled: !!userId,
@@ -80,14 +87,20 @@ export function Settings() {
     setIsLoading(true);
     try {
       // Update username in local database
-      await db.users.where("id").equals(userId).modify({
-        username: username.trim(),
-        updatedAt: new Date().toISOString(),
-      });
+      await db.users
+        .where("id")
+        .equals(userId)
+        .modify({
+          username: username.trim(),
+          updatedAt: new Date().toISOString(),
+        })
+        .then(() => {
+          router.push("/");
+        });
     } catch (error) {
       console.error("Failed to update username:", error);
     } finally {
-      router.push("/");
+      setIsLoading(false);
     }
   };
 

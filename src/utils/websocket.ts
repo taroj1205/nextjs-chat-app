@@ -121,7 +121,7 @@ export function useMessaging(url: () => string) {
         ref.current = null;
       }
     };
-  }, [queryClient]);
+  }, [queryClient, connect]);
 
   const sendMessage = useCallback(
     async (message: Omit<Message, "id">) => {

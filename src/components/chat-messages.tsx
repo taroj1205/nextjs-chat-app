@@ -4,17 +4,12 @@ import {
   For,
   ScrollArea,
   VStack,
-  Text,
-  HStack,
-  useLocalStorage,
   Bleed,
   Box,
 } from "@yamada-ui/react";
 import { FC, memo } from "react";
 import { MessageInput } from "./message-input";
 import { MessageCard } from "./message-card";
-import { db } from "@/db";
-import { nanoid } from "nanoid";
 
 interface ChatMessagesProps {
   hostname: string;

@@ -10,7 +10,6 @@ import {
   Icon,
   Link,
   Tooltip,
-  Tag,
   Card,
   CardBody,
   Skeleton,

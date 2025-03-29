@@ -1,6 +1,3 @@
-import { SYSTEM_INFO } from "@/constants";
-import { Message } from "@/types";
-import { nanoid } from "nanoid";
 
 export function GET() {
   console.log("GET request");

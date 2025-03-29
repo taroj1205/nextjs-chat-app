@@ -3,7 +3,7 @@
 import { SYSTEM_INFO } from "@/constants";
 import { db } from "@/db";
 import { Message } from "@/types";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { nanoid } from "nanoid";
 
@@ -11,6 +11,18 @@ export function useMessaging(url: () => string) {
   const ref = useRef<WebSocket | null>(null);
   const target = useRef(url);
   const queryClient = useQueryClient();
+  const [isConnected, setIsConnected] = useState(false);
+
+  const connect = useCallback(() => {
+    if (ref.current) {
+      ref.current.close();
+      ref.current = null;
+    }
+
+    const socket = new WebSocket(target.current());
+    ref.current = socket;
+    return socket;
+  }, []);
 
   const { data: messages = [] } = useQuery({
     queryKey: ["messages"],
@@ -40,13 +52,7 @@ export function useMessaging(url: () => string) {
   });
 
   useEffect(() => {
-    if (ref.current) {
-      ref.current.close();
-      ref.current = null;
-    }
-
-    const socket = new WebSocket(target.current());
-    ref.current = socket;
+    const socket = connect();
 
     const controller = new AbortController();
 
@@ -54,6 +60,7 @@ export function useMessaging(url: () => string) {
       "open",
       () => {
         console.log("Connection opened");
+        setIsConnected(true);
       },
       controller
     );
@@ -102,6 +109,7 @@ export function useMessaging(url: () => string) {
       (event) => {
         if (event.wasClean) return;
         console.log("Connection closed");
+        setIsConnected(false);
       },
       controller
     );
@@ -129,5 +137,12 @@ export function useMessaging(url: () => string) {
     [queryClient]
   );
 
-  return [messages, sendMessage, onlineCount, userId] as const;
+  return [
+    messages,
+    sendMessage,
+    onlineCount,
+    userId,
+    isConnected,
+    connect,
+  ] as const;
 }

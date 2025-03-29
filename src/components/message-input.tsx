@@ -65,7 +65,6 @@ export const MessageInput: FC<MessageInputProps> = memo(
         py="sm"
         px="md"
         w="full"
-        bg="blackAlpha.500"
         backdropFilter="blur(10px)"
       >
         {onlineCount > 0 && (
@@ -78,6 +77,8 @@ export const MessageInput: FC<MessageInputProps> = memo(
             autosize
             maxLength={1000}
             required
+            rows={1}
+            maxRows={5}
             name="message"
             placeholder="Type a message"
             ref={textareaRef}

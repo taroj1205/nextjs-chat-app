@@ -18,15 +18,11 @@ export function SOCKET(
 ) {
   console.log("New client connected");
   for (const other of server.clients) {
-    if (client === other || other.readyState !== other.OPEN) continue;
     other.send(
       JSON.stringify({
-        id: nanoid(),
-        senderId: SYSTEM_INFO.senderId,
-        channelId: SYSTEM_INFO.channelId,
-        timestamp: SYSTEM_INFO.timestamp,
-        text: "A user joined the chat",
-      } as Message)
+        type: "userCount",
+        count: server.clients.size,
+      })
     );
   }
 
@@ -37,27 +33,13 @@ export function SOCKET(
         other.send(message);
   });
 
-  client.send(
-    JSON.stringify({
-      id: nanoid(),
-      senderId: SYSTEM_INFO.senderId,
-      channelId: SYSTEM_INFO.channelId,
-      timestamp: SYSTEM_INFO.timestamp,
-      text: `There are ${server.clients.size - 1} other users online`,
-    } as Message)
-  );
-
   return () => {
     for (const other of server.clients) {
-      if (client === other || other.readyState !== other.OPEN) continue;
       other.send(
         JSON.stringify({
-          id: nanoid(),
-          senderId: SYSTEM_INFO.senderId,
-          channelId: SYSTEM_INFO.channelId,
-          timestamp: SYSTEM_INFO.timestamp,
-          text: "A user left the chat",
-        } as Message)
+          type: "userCount",
+          count: server.clients.size,
+        })
       );
     }
   };

@@ -10,9 +10,12 @@
     "prepare": "next-ws patch"
   },
   "dependencies": {
+    "@tanstack/react-form": "^1.2.1",
+    "@tanstack/react-query": "^5.70.0",
     "@types/ws": "^8.18.0",
     "@yamada-ui/lucide": "^1.10.4",
-    "@yamada-ui/react": "1.7.0",
+    "@yamada-ui/react": "1.7.6",
+    "date-fns": "^4.1.0",
     "dexie": "^4.0.11",
     "nanoid": "^5.1.5",
     "next": "^15.2.3",

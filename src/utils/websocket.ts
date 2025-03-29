@@ -3,26 +3,50 @@
 import { SYSTEM_INFO } from "@/constants";
 import { db } from "@/db";
 import { Message } from "@/types";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { nanoid } from "nanoid";
 
 export function useMessaging(url: () => string) {
-  const ref = useRef<WebSocket>(null);
+  const ref = useRef<WebSocket | null>(null);
   const target = useRef(url);
+  const queryClient = useQueryClient();
 
-  const [messages, setMessages] = useState<Message[]>([]);
+  const { data: messages = [] } = useQuery({
+    queryKey: ["messages"],
+    queryFn: async () => {
+      return await db.messages.toArray();
+    },
+  });
+
+  const { data: onlineCount = 0 } = useQuery({
+    queryKey: ["onlineCount"],
+    queryFn: () => Promise.resolve(0),
+    enabled: false, // Initially disabled as it's updated via WebSocket
+  });
+
+  const { data: userId } = useQuery({
+    queryKey: ["userId"],
+    queryFn: async () => {
+      const userId = localStorage.getItem("userId");
+      console.log(userId);
+      if (!userId) {
+        const id = nanoid();
+        localStorage.setItem("userId", id);
+        return id;
+      }
+      return userId;
+    },
+  });
 
   useEffect(() => {
-    if (ref.current) return;
+    if (ref.current) {
+      ref.current.close();
+      ref.current = null;
+    }
+
     const socket = new WebSocket(target.current());
     ref.current = socket;
-
-    console.log(ref.current);
-
-    const getDefaultMessages = async () => {
-      const messages = await db.messages.toArray();
-      setMessages(messages);
-    };
-    getDefaultMessages();
 
     const controller = new AbortController();
 
@@ -40,13 +64,24 @@ export function useMessaging(url: () => string) {
         console.log("Incoming event:", event);
         const payload =
           typeof event.data === "string" ? event.data : await event.data.text();
-        const message = JSON.parse(payload) as Message;
+        const data = JSON.parse(payload);
+
+        if ("type" in data && data.type === "userCount") {
+          console.log("User count:", data.count);
+          queryClient.setQueryData(["onlineCount"], data.count);
+          return;
+        }
+
+        const message = data as Message;
         console.log("Incoming message:", message);
         console.log(message.senderId, SYSTEM_INFO.senderId, message.text);
         if (message.senderId !== SYSTEM_INFO.senderId) {
           await db.messages.add(message);
         }
-        setMessages((p) => [...p, message]);
+        queryClient.setQueryData(["messages"], (old: Message[] = []) => [
+          ...old,
+          message,
+        ]);
       },
       controller
     );
@@ -71,16 +106,28 @@ export function useMessaging(url: () => string) {
       controller
     );
 
-    return () => controller.abort();
-  }, []);
+    return () => {
+      controller.abort();
+      if (ref.current) {
+        ref.current.close();
+        ref.current = null;
+      }
+    };
+  }, [queryClient]);
 
-  const sendMessage = useCallback(async (message: Omit<Message, "id">) => {
-    if (!ref.current || ref.current.readyState !== ref.current.OPEN) return;
-    console.log("Outgoing message:", message);
-    ref.current.send(JSON.stringify(message));
-    const id = await db.messages.add(message);
-    setMessages((p) => [...p, { id, ...message }]);
-  }, []);
+  const sendMessage = useCallback(
+    async (message: Omit<Message, "id">) => {
+      if (!ref.current || ref.current.readyState !== ref.current.OPEN) return;
+      console.log("Outgoing message:", message);
+      ref.current.send(JSON.stringify(message));
+      const id = await db.messages.add(message);
+      queryClient.setQueryData(["messages"], (old: Message[] = []) => [
+        ...old,
+        { id, ...message },
+      ]);
+    },
+    [queryClient]
+  );
 
-  return [messages, sendMessage] as const;
+  return [messages, sendMessage, onlineCount, userId] as const;
 }

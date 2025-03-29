@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { ColorModeScript, Container, UIProvider } from "@yamada-ui/react";
+import { Providers } from "./providers";
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -12,14 +13,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      style={{ height: "100svh", overflowY: "clip" }}
+    >
       <body suppressHydrationWarning>
         <ColorModeScript initialColorMode="dark" />
-        <UIProvider>
-          <Container centerContent minH="100svh" p="0">
+        <Providers>
+          <Container centerContent h="100svh" maxH="100svh" p="0">
             {children}
           </Container>
-        </UIProvider>
+        </Providers>
       </body>
     </html>
   );

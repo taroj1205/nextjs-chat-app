@@ -26,70 +26,42 @@ export function useMessaging(url: () => string) {
       ref.current = null;
     }
 
-    try {
-      const socket = new WebSocket(target.current());
-      // Set initial state
-      setIsConnected(false);
+    const socket = new WebSocket(target.current());
+    setIsConnected(false);
 
-      // Set a connection timeout
-      const connectionTimeout = setTimeout(() => {
-        if (socket.readyState === WebSocket.CONNECTING) {
-          console.log("Connection attempt timed out");
-          socket.close();
-          handleReconnect();
-        }
-      }, 5000); // 5 second timeout
+    const connectionTimeout = setTimeout(() => {
+      if (socket.readyState === WebSocket.CONNECTING) {
+        console.log("Connection attempt timed out");
+        socket.close();
+      }
+    }, 5000);
 
-      socket.addEventListener("open", () => {
-        clearTimeout(connectionTimeout);
-      });
+    const handleOpen = () => {
+      clearTimeout(connectionTimeout);
+      setIsConnected(true);
       ref.current = socket;
+      retryCount.current = 0;
+    };
 
-      const handleReconnect = () => {
-        if (ref.current) {
-          ref.current.close();
-          ref.current = null;
-        }
-
-        if (retryCount.current < maxRetries) {
-          retryCount.current++;
-          console.log(
-            `Reconnection attempt ${retryCount.current}/${maxRetries}`
-          );
-          const delay = Math.min(1000 * Math.pow(2, retryCount.current), 10000);
-          console.log(`Reconnecting in ${delay}ms`);
-          setTimeout(() => {
-            connect();
-          }, delay);
-        } else {
-          console.error("Max reconnection attempts reached");
-          retryCount.current = 0;
-          setIsConnected(false);
-        }
-      };
-
-      socket.addEventListener("error", (error) => {
-        console.error("WebSocket connection error:", error);
-        setIsConnected(false);
-
-        // Clean up the current socket instance before reconnecting
-        if (ref.current) {
-          ref.current.close();
-          ref.current = null;
-        }
-
-        // Add a small delay before reconnecting to prevent rapid reconnection attempts
-        setTimeout(() => {
-          handleReconnect();
-        }, 1000);
-      });
-
-      return socket;
-    } catch (error) {
-      console.error("Failed to create WebSocket connection:", error);
+    const handleError = (error: Event) => {
+      console.error("WebSocket connection error:", error);
       setIsConnected(false);
-      return null;
-    }
+      clearTimeout(connectionTimeout);
+      socket.close();
+    };
+
+    socket.addEventListener("open", handleOpen);
+    socket.addEventListener("error", handleError);
+
+    socket.addEventListener("close", () => {
+      clearTimeout(connectionTimeout);
+      setIsConnected(false);
+      if (ref.current === socket) {
+        ref.current = null;
+      }
+    });
+
+    return socket;
   }, []);
 
   const { data: messages = [] } = useQuery({
@@ -179,8 +151,6 @@ export function useMessaging(url: () => string) {
       (event) => {
         console.log("Connection closed", event.code, event.reason);
         setIsConnected(false);
-
-        // Clean up the current socket instance
         if (ref.current) {
           ref.current.close();
           ref.current = null;
@@ -192,20 +162,23 @@ export function useMessaging(url: () => string) {
           return;
         }
 
-        // Attempt to reconnect with exponential backoff
-        if (retryCount.current < maxRetries) {
-          retryCount.current++;
-          const delay = Math.min(1000 * Math.pow(2, retryCount.current), 10000);
+        // Add exponential backoff for reconnection
+        const backoffDelay = Math.min(
+          1000 * Math.pow(2, retryCount.current),
+          10000
+        );
+        retryCount.current++;
+
+        if (retryCount.current <= maxRetries) {
           console.log(
-            `Reconnecting in ${delay}ms (attempt ${retryCount.current}/${maxRetries})`
+            `Reconnecting in ${backoffDelay}ms (attempt ${retryCount.current}/${maxRetries})`
           );
           setTimeout(() => {
             connect();
-          }, delay);
+          }, backoffDelay);
         } else {
-          console.error("Max reconnection attempts reached");
+          console.log("Max reconnection attempts reached");
           retryCount.current = 0;
-          setIsConnected(false);
         }
       },
       controller

@@ -24,8 +24,16 @@ export const ChatMessages: FC<ChatMessagesProps> = memo(({ hostname }) => {
   const shouldScrollRef = useRef(true);
 
   const wsUrl = `ws${isProd ? "s" : ""}://${hostname}/ws`;
-  const [messages, sendMessage, onlineCount, userId, isConnected, connect] =
-    useMessaging(() => wsUrl);
+  const [
+    messages,
+    sendMessage,
+    onlineCount,
+    userId,
+    isConnected,
+    connect,
+    retryCount,
+    maxRetries,
+  ] = useMessaging(() => wsUrl);
 
   useEffect(() => {
     const scrollArea = scrollAreaRef.current;
@@ -91,6 +99,8 @@ export const ChatMessages: FC<ChatMessagesProps> = memo(({ hostname }) => {
         onlineCount={onlineCount}
         isConnected={isConnected}
         onReconnect={connect}
+        retryCount={retryCount}
+        maxRetries={maxRetries}
       />
     </VStack>
   );

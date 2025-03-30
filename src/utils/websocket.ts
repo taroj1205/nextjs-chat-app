@@ -17,35 +17,71 @@ export function useMessaging(url: () => string) {
 
   const connect = useCallback(() => {
     if (ref.current) {
-      ref.current.close();
+      if (
+        ref.current.readyState === WebSocket.CONNECTING ||
+        ref.current.readyState === WebSocket.OPEN
+      ) {
+        ref.current.close();
+      }
       ref.current = null;
     }
 
     try {
       const socket = new WebSocket(target.current());
+      // Set initial state
+      setIsConnected(false);
+
+      // Set a connection timeout
+      const connectionTimeout = setTimeout(() => {
+        if (socket.readyState === WebSocket.CONNECTING) {
+          console.log("Connection attempt timed out");
+          socket.close();
+          handleReconnect();
+        }
+      }, 5000); // 5 second timeout
+
+      socket.addEventListener("open", () => {
+        clearTimeout(connectionTimeout);
+      });
       ref.current = socket;
 
       const handleReconnect = () => {
+        if (ref.current) {
+          ref.current.close();
+          ref.current = null;
+        }
+
         if (retryCount.current < maxRetries) {
           retryCount.current++;
           console.log(
             `Reconnection attempt ${retryCount.current}/${maxRetries}`
           );
+          const delay = Math.min(1000 * Math.pow(2, retryCount.current), 10000);
+          console.log(`Reconnecting in ${delay}ms`);
           setTimeout(() => {
-            if (!ref.current || ref.current.readyState === WebSocket.CLOSED) {
-              connect();
-            }
-          }, Math.min(1000 * Math.pow(2, retryCount.current), 10000));
+            connect();
+          }, delay);
         } else {
           console.error("Max reconnection attempts reached");
           retryCount.current = 0;
+          setIsConnected(false);
         }
       };
 
       socket.addEventListener("error", (error) => {
         console.error("WebSocket connection error:", error);
         setIsConnected(false);
-        handleReconnect();
+
+        // Clean up the current socket instance before reconnecting
+        if (ref.current) {
+          ref.current.close();
+          ref.current = null;
+        }
+
+        // Add a small delay before reconnecting to prevent rapid reconnection attempts
+        setTimeout(() => {
+          handleReconnect();
+        }, 1000);
       });
 
       return socket;
@@ -141,9 +177,21 @@ export function useMessaging(url: () => string) {
     socket.addEventListener(
       "close",
       (event) => {
-        if (event.wasClean) return;
-        console.log("Connection closed");
+        console.log("Connection closed", event.code, event.reason);
         setIsConnected(false);
+
+        // Clean up the current socket instance
+        if (ref.current) {
+          ref.current.close();
+          ref.current = null;
+        }
+
+        // Don't attempt to reconnect if it was a clean close
+        if (event.wasClean) {
+          console.log("Clean connection close, not attempting to reconnect");
+          return;
+        }
+
         // Attempt to reconnect with exponential backoff
         if (retryCount.current < maxRetries) {
           retryCount.current++;
@@ -152,13 +200,12 @@ export function useMessaging(url: () => string) {
             `Reconnecting in ${delay}ms (attempt ${retryCount.current}/${maxRetries})`
           );
           setTimeout(() => {
-            if (!ref.current || ref.current.readyState === WebSocket.CLOSED) {
-              connect();
-            }
+            connect();
           }, delay);
         } else {
           console.error("Max reconnection attempts reached");
           retryCount.current = 0;
+          setIsConnected(false);
         }
       },
       controller
@@ -175,16 +222,26 @@ export function useMessaging(url: () => string) {
 
   const sendMessage = useCallback(
     async (message: Omit<Message, "id">) => {
-      if (!ref.current || ref.current.readyState !== ref.current.OPEN) return;
+      if (!ref.current || ref.current.readyState !== ref.current.OPEN) {
+        console.log("WebSocket not ready, attempting to reconnect...");
+        connect();
+        return;
+      }
       console.log("Outgoing message:", message);
-      ref.current.send(JSON.stringify(message));
-      const id = await db.messages.add(message);
-      queryClient.setQueryData(["messages"], (old: Message[] = []) => [
-        ...old,
-        { id, ...message },
-      ]);
+      try {
+        ref.current.send(JSON.stringify(message));
+        const id = await db.messages.add(message);
+        queryClient.setQueryData(["messages"], (old: Message[] = []) => [
+          ...old,
+          { id, ...message },
+        ]);
+      } catch (error) {
+        console.error("Failed to send message:", error);
+        setIsConnected(false);
+        connect(); // Use connect instead of handleReconnect since it's not in scope
+      }
     },
-    [queryClient]
+    [queryClient, connect]
   );
 
   return [
@@ -194,5 +251,7 @@ export function useMessaging(url: () => string) {
     userId,
     isConnected,
     connect,
+    retryCount.current,
+    maxRetries,
   ] as const;
 }

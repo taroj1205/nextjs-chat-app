@@ -23,7 +23,7 @@ export const ChatMessages: FC<ChatMessagesProps> = memo(({ hostname }) => {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const shouldScrollRef = useRef(true);
 
-  const wsUrl = `http${isProd ? "s" : ""}://${hostname}/ws`;
+  const wsUrl = `ws${isProd ? "s" : ""}://${hostname}/ws`;
   const [messages, sendMessage, onlineCount, userId, isConnected, connect] =
     useMessaging(() => wsUrl);
 

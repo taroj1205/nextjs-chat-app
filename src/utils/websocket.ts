@@ -12,6 +12,8 @@ export function useMessaging(url: () => string) {
   const target = useRef(url);
   const queryClient = useQueryClient();
   const [isConnected, setIsConnected] = useState(false);
+  const retryCount = useRef(0);
+  const maxRetries = 5;
 
   const connect = useCallback(() => {
     if (ref.current) {
@@ -19,9 +21,39 @@ export function useMessaging(url: () => string) {
       ref.current = null;
     }
 
-    const socket = new WebSocket(target.current());
-    ref.current = socket;
-    return socket;
+    try {
+      const socket = new WebSocket(target.current());
+      ref.current = socket;
+
+      const handleReconnect = () => {
+        if (retryCount.current < maxRetries) {
+          retryCount.current++;
+          console.log(
+            `Reconnection attempt ${retryCount.current}/${maxRetries}`
+          );
+          setTimeout(() => {
+            if (!ref.current || ref.current.readyState === WebSocket.CLOSED) {
+              connect();
+            }
+          }, Math.min(1000 * Math.pow(2, retryCount.current), 10000));
+        } else {
+          console.error("Max reconnection attempts reached");
+          retryCount.current = 0;
+        }
+      };
+
+      socket.addEventListener("error", (error) => {
+        console.error("WebSocket connection error:", error);
+        setIsConnected(false);
+        handleReconnect();
+      });
+
+      return socket;
+    } catch (error) {
+      console.error("Failed to create WebSocket connection:", error);
+      setIsConnected(false);
+      return null;
+    }
   }, []);
 
   const { data: messages = [] } = useQuery({
@@ -53,6 +85,7 @@ export function useMessaging(url: () => string) {
 
   useEffect(() => {
     const socket = connect();
+    if (!socket) return;
 
     const controller = new AbortController();
 
@@ -61,6 +94,7 @@ export function useMessaging(url: () => string) {
       () => {
         console.log("Connection opened");
         setIsConnected(true);
+        retryCount.current = 0;
       },
       controller
     );
@@ -110,6 +144,22 @@ export function useMessaging(url: () => string) {
         if (event.wasClean) return;
         console.log("Connection closed");
         setIsConnected(false);
+        // Attempt to reconnect with exponential backoff
+        if (retryCount.current < maxRetries) {
+          retryCount.current++;
+          const delay = Math.min(1000 * Math.pow(2, retryCount.current), 10000);
+          console.log(
+            `Reconnecting in ${delay}ms (attempt ${retryCount.current}/${maxRetries})`
+          );
+          setTimeout(() => {
+            if (!ref.current || ref.current.readyState === WebSocket.CLOSED) {
+              connect();
+            }
+          }, delay);
+        } else {
+          console.error("Max reconnection attempts reached");
+          retryCount.current = 0;
+        }
       },
       controller
     );

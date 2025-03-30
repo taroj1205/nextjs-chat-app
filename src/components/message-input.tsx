@@ -17,10 +17,19 @@ interface MessageInputProps {
   onlineCount: number;
   isConnected: boolean;
   onReconnect: () => void;
+  retryCount: number;
+  maxRetries: number;
 }
 
 export const MessageInput: FC<MessageInputProps> = memo(
-  ({ sendMessage, onlineCount, isConnected, onReconnect }) => {
+  ({
+    sendMessage,
+    onlineCount,
+    isConnected,
+    onReconnect,
+    retryCount,
+    maxRetries,
+  }) => {
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
     const handleSubmit = useCallback(async () => {
@@ -82,13 +91,16 @@ export const MessageInput: FC<MessageInputProps> = memo(
         ) : (
           <HStack gap="xs">
             <Center as={Tag} colorScheme="danger" w="fit-content">
-              Connection Disconnected
+              {retryCount > 0
+                ? `Reconnecting (${retryCount}/${maxRetries})...`
+                : "Connection Disconnected"}
             </Center>
             <IconButton
               onClick={onReconnect}
               variant="subtle"
               colorScheme="primary"
               size="xs"
+              loading={retryCount > 0}
             >
               <RefreshCwIcon />
             </IconButton>
